@@ -1,13 +1,7 @@
-import {
-  ExcalidrawLinearElement,
-  FillStyle,
-  RoundnessType,
-  StrokeStyle,
-} from '@excalidraw/excalidraw/types/element/types';
-import { LiveList, LiveObject } from '@liveblocks/client';
+import { ExcalidrawLinearElement, FillStyle, RoundnessType, StrokeStyle } from "@excalidraw/excalidraw/types/element/types";
+import { LiveList } from "@liveblocks/client";
 
-export type LiveObjectExcalidrawElement = LiveObject<{
-  type: string;
+export type LiveObjectExcalidrawElement = {
   id: string;
   x: number;
   y: number;
@@ -17,8 +11,8 @@ export type LiveObjectExcalidrawElement = LiveObject<{
   strokeWidth: number;
   strokeStyle: StrokeStyle;
   roundness: null | {
-    type: RoundnessType;
-    value?: number;
+      type: RoundnessType;
+      value?: number;
   };
   roughness: number;
   opacity: number;
@@ -34,29 +28,32 @@ export type LiveObjectExcalidrawElement = LiveObject<{
   /** Random integer that is regenerated on each change.
       Used for deterministic reconciliation of updates during collaboration,
       in case the versions (see above) are identical. */
-  boundElements: Readonly<{
-    id: ExcalidrawLinearElement['id'];
-    type: 'arrow' | 'text';
-  }> | null;
   versionNonce: number;
-  groupIds: LiveList<string>;
+  isDeleted: boolean;
+  /** List of groups the element belongs to.
+      Ordered from deepest to shallowest. */
+  groupIds: string[];
   frameId: string | null;
+  /** other elements that are bound to this element */
+  boundElements: Readonly<{
+    id: ExcalidrawLinearElement["id"];
+    type: "arrow" | "text";
+  }> | null;
+  /** epoch (ms) timestamp of last element update */
   updated: number;
   link: string | null;
   locked: boolean;
-  isDeleted: boolean;
-}>;
+  customData?: Record<string, any>;
+};
 
 declare global {
+  // These custom types are all optional, just define the ones you want/need
   interface Liveblocks {
     Presence: {
-      cursor: {
-        x: number;
-        y: number;
-      } | null;
+      cursor: { x: number; y: number; } | null;
     };
     Storage: {
-      elements: LiveList<LiveObjectExcalidrawElement>;
+      elements: LiveList<LiveObjectExcalidrawElement>
     };
     // UserMeta: {};
     // RoomEvent: {};
