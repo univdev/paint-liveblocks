@@ -1,52 +1,42 @@
 'use client';
 
-import { Excalidraw } from '@excalidraw/excalidraw';
-import { useMutation, useMyPresence, useStorage } from '@liveblocks/react';
-import { CursorPresence } from '../Liveblocks/CursorPresence';
-import { useState } from 'react';
-import { Pointer } from '@/types/Pointer.type';
-import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
-import { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
-import { LiveObjectExcalidrawElement } from '../../../liveblocks.config';
+import { Excalidraw } from "@excalidraw/excalidraw";
+import { ExcalidrawElement } from "@excalidraw/excalidraw/types/element/types";
+import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
+import { Box } from "@mui/material";
+import { CursorPresence } from "./CursorPresence";
+import { useEffect, useState } from "react";
+import { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types/types";
+import AppRouter from "next/dist/client/components/app-router";
 
-export const PaintTool = () => {
-  const [excalidrawApi, setExcalidrawApi] =
-    useState<ExcalidrawImperativeAPI | null>(null);
+export default function PaintTool() {
+  const [localElements, setLocalElements] = useState<ExcalidrawElement[]>([]);
+  const elements = useStorage((root) => root.elements as unknown as ExcalidrawElement[]);
+  const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
   const [, setPresence] = useMyPresence();
-  const [camera, setCamera] = useState<(Pointer & { zoom: number }) | null>({
-    x: 0,
-    y: 0,
-    zoom: 1,
-  });
-  const elements = useStorage((root) => root.elements as ExcalidrawElement[]);
+  const [camera, setCamera] = useState<{x: number; y: number; zoom: number} | null>(null);
 
-  const updateElements = useMutation(
-    ({ storage }, elements: ExcalidrawElement[]) => {
-      const items = storage.get('elements');
-      elements.forEach((element, index) => {
-        items.set(index, element as unknown as LiveObjectExcalidrawElement);
-      });
-    },
-    []
-  );
+  const updateElements = useMutation(({ storage }, elements: ExcalidrawElement[]) => {
+    const items = storage.get('elements');
+    items.clear();
+    elements.forEach((element) => {
+      items.push(element as any);
+    })
+  }, []);
 
   if (elements === null) return;
 
   return (
-    <div
-      style={{ width: '100svw', height: '100svh' }}
+    <Box
+      sx={{ width: '100svw', height: '100svh' }}
       onMouseLeave={() => {
         setPresence({ cursor: null });
       }}
     >
-      <CursorPresence
-        screenX={camera?.x ?? 0}
-        screenY={camera?.y ?? 0}
-        zoom={camera?.zoom ?? 1}
-      />
+      <CursorPresence screenX={camera?.x ?? 0} screenY={camera?.y ?? 0} zoom={camera?.zoom ?? 1} />
       <Excalidraw
         initialData={{
-          elements: elements ?? [],
+          elements,
         }}
         onPointerUpdate={(pointer) => {
           setPresence({
@@ -54,16 +44,15 @@ export const PaintTool = () => {
           });
         }}
         onScrollChange={(scrollX, scrollY) => {
-          const zoom = excalidrawApi?.getAppState().zoom.value ?? 1;
-          setCamera({ x: scrollX, y: scrollY, zoom });
+          setCamera({ x: scrollX, y: scrollY, zoom: api?.getAppState().zoom.value ?? 1 });
         }}
         onChange={(elements) => {
           updateElements(elements as ExcalidrawElement[]);
         }}
         excalidrawAPI={(api) => {
-          setExcalidrawApi(api);
+          setApi(api);
         }}
       />
-    </div>
+    </Box>
   );
-};
+}
